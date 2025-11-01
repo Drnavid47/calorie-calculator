@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>محاسبه کالری و درشت‌مغذی</title>
+  <style>
+    :root{
+      --bg:#f7f8fa;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#2b6cb0; /* آبی ملایم */
+      --accent-dark:#1e4e79;
+      --success:#16a34a;
+      --danger:#ef4444;
+      font-family: "Vazir", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:#111827;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:18px;
+    }
+    .container{
+      max-width:780px;
+      margin:0 auto;
+    }
+    h1{font-size:20px;margin:6px 0 12px}
+    .card{
+      background:var(--card);
+      border-radius:12px;
+      padding:14px;
+      box-shadow: 0 4px 12px rgba(16,24,40,0.05);
+      margin-bottom:12px;
+    }
+    label{display:block;font-size:13px;margin-bottom:6px;color:var(--muted)}
+    input[type="number"], select {
+      width:100%;
+      padding:10px 12px;
+      font-size:15px;
+      border:1px solid #e6e9ee;
+      border-radius:8px;
+      background:white;
+    }
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .col{flex:1;min-width:140px}
+    .actions{display:flex;gap:8px;margin-top:10px}
+    button{
+      padding:10px 12px;border-radius:8px;border:0;font-weight:600;
+      background:var(--accent); color:white; cursor:pointer;
+    }
+    button.ghost{background:transparent;color:var(--accent);border:1px solid #d1e3fb}
+    .result{
+      display:flex;flex-direction:column;gap:8px;
+    }
+    .big{
+      font-size:22px;font-weight:700;color:var(--accent-dark)
+    }
+    .small-muted{font-size:13px;color:var(--muted)}
+    .macro-list{display:flex;gap:8px;flex-wrap:wrap}
+    .macro{
+      flex:1;min-width:120px;background:#fbfdff;border-radius:10px;padding:10px;border:1px solid #eef6ff;
+    }
+    .meta{font-size:12px;color:var(--muted)}
+    .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:14px}
+    @media (max-width:480px){
+      body{padding:12px}
+      h1{font-size:18px}
+      .row{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>محاسبهٔ کالری و درشت‌مغذی — نسخه وب</h1>
+
+    <div class="card">
+      <div class="row">
+        <div class="col">
+          <label>سن (سال)</label>
+          <input id="age" type="number" min="10" max="120" value="30">
+        </div>
+        <div class="col">
+          <label>جنسیت</label>
+          <select id="sex">
+            <option value="male">مرد</option>
+            <option value="female">زن</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <div class="col">
+          <label>وزن (kg)</label>
+          <input id="weight" type="number" min="20" max="300" value="75" step="0.1">
+        </div>
+        <div class="col">
+          <label>قد (cm)</label>
+          <input id="height" type="number" min="100" max="230" value="178">
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <div class="col">
+          <label>سطح فعالیت</label>
+          <select id="activity">
+            <option value="1.2">خیلی کم — کاملاً بی‌تحرک</option>
+            <option value="1.375">کم — فعالیت سبک</option>
+            <option value="1.55" selected>متوسط — ورزش ۲-۳ بار/هفته</option>
+            <option value="1.725">زیاد — ورزش ۴-۶ بار/هفته</option>
+            <option value="1.9">خیلی زیاد — کار بدنی سنگین</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>هدف</label>
+          <select id="goal">
+            <option value="-20">کاهش وزن (پیش‌فرض −۲۰%)</option>
+            <option value="0" selected>حفظ وزن</option>
+            <option value="15">افزایش وزن (حجم) +۱۵%</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px;align-items:center">
+        <div class="col">
+          <label>روش تعیین پروتئین</label>
+          <select id="proteinMode">
+            <option value="percent">درصد از کالری</option>
+            <option value="gperkg" selected>گرم به ازای هر کیلوگرم وزن</option>
+          </select>
+        </div>
+        <div class="col">
+          <label id="proteinLabel">اگر g/kg: مقدار (g/kg)</label>
+          <input id="proteinValue" type="number" min="0.8" max="3.5" step="0.1" value="1.8">
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <div class="col">
+          <label>الگوی ماکرو (پیش‌فرض)</label>
+          <select id="macroPreset">
+            <option value="balanced">متوازن (پ:20% چ:30% ک:50%)</option>
+            <option value="highprotein">پرپروتئین (پ:30% چ:25% ک:45%)</option>
+            <option value="lowcarb">کم‌کربوهیدرات (پ:30% چ:40% ک:30%)</option>
+            <option value="keto">کتو (پ:20% چ:75% ک:5%)</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>پیش‌نمایش درصد ماکرو (قابل ویرایش)</label>
+          <div class="row">
+            <input id="protPct" type="number" min="0" max="80" value="20" style="width:32%;padding:9px;border-radius:8px">
+            <input id="fatPct" type="number" min="0" max="80" value="30" style="width:32%;padding:9px;border-radius:8px">
+            <input id="carbPct" type="number" min="0" max="100" value="50" style="width:32%;padding:9px;border-radius:8px">
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="calcBtn">محاسبه کن</button>
+        <button class="ghost" id="resetBtn" type="button">بازنشانی</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="resultsArea">
+        <div class="result">
+          <div><span class="small-muted">BMR (استراحت)</span><div id="bmr" class="big">—</div></div>
+          <div><span class="small-muted">TDEE (کل روزانه)</span><div id="tdee" class="big">—</div></div>
+          <div><span class="small-muted">کالری هدف (با توجه به هدف)</span><div id="targetCal" class="big">—</div></div>
+
+          <div style="margin-top:8px">
+            <div class="small-muted">درشت‌مغذی‌ها</div>
+            <div class="macro-list" id="macroList">
+              <!-- Macro cards injected -->
+            </div>
+          </div>
+
+          <div style="margin-top:10px" class="small-muted">
+            توضیح: پروتئین و کربوهیدرات = 4 kcal/g، چربی = 9 kcal/g.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="small-muted">
+        مثال غذاهای ایرانی (قابل افزودن به دیتابیس بعدی):
+        <ul>
+          <li>برنج پخته: ~130 kcal / 100g</li>
+          <li>کباب گوشت (میانگین): ~250-300 kcal / 100g</li>
+          <li>نان سنگک: ~270 kcal / 100g</li>
+          <li>ماست کم‌چرب: ~60 kcal / 100g</li>
+          <li>گردن مرغ پخته: ~165 kcal / 100g</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">نسخهٔ اولیه — برای توسعه: ذخیرهٔ روزانه، لیست غذا، حساب پروتئین بر اساس هدف پزشکی و نمودارها اضافه می‌شود.</div>
+  </div>
+
+  <script>
+    // المان‌ها
+    const ageEl = document.getElementById('age');
+    const sexEl = document.getElementById('sex');
+    const weightEl = document.getElementById('weight');
+    const heightEl = document.getElementById('height');
+    const activityEl = document.getElementById('activity');
+    const goalEl = document.getElementById('goal');
+    const proteinModeEl = document.getElementById('proteinMode');
+    const proteinValueEl = document.getElementById('proteinValue');
+    const proteinLabel = document.getElementById('proteinLabel');
+    const macroPreset = document.getElementById('macroPreset');
+    const protPctEl = document.getElementById('protPct');
+    const fatPctEl = document.getElementById('fatPct');
+    const carbPctEl = document.getElementById('carbPct');
+    const calcBtn = document.getElementById('calcBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const bmrEl = document.getElementById('bmr');
+    const tdeeEl = document.getElementById('tdee');
+    const targetCalEl = document.getElementById('targetCal');
+    const macroList = document.getElementById('macroList');
+
+    // preset mapping
+    const presets = {
+      balanced: {p:20, f:30, c:50},
+      highprotein: {p:30, f:25, c:45},
+      lowcarb: {p:30, f:40, c:30},
+      keto: {p:20, f:75, c:5}
+    };
+
+    macroPreset.addEventListener('change', e=>{
+      const v = presets[e.target.value];
+      protPctEl.value = v.p;
+      fatPctEl.value = v.f;
+      carbPctEl.value = v.c;
+    });
+
+    proteinModeEl.addEventListener('change', ()=>{
+      if(proteinModeEl.value === 'gperkg'){
+        proteinLabel.textContent = 'اگر g/kg: مقدار (g/kg)';
+        proteinValueEl.value = '1.8';
+      } else {
+        proteinLabel.textContent = 'اگر درصد پروتئین (٪)';
+        proteinValueEl.value = '20';
+      }
+    });
+
+    resetBtn.addEventListener('click', ()=>{
+      ageEl.value=30; sexEl.value='male'; weightEl.value=75; heightEl.value=178;
+      activityEl.value='1.55'; goalEl.value='0'; proteinModeEl.value='gperkg';
+      proteinValueEl.value=1.8; macroPreset.value='balanced';
+      protPctEl.value=20; fatPctEl.value=30; carbPctEl.value=50;
+      bmrEl.textContent='—'; tdeeEl.textContent='—'; targetCalEl.textContent='—';
+      macroList.innerHTML='';
+    });
+
+    function round2(n){ return Math.round(n*100)/100; }
+
+    calcBtn.addEventListener('click', ()=>{
+      // خواندن ورودی‌ها
+      const age = Number(ageEl.value) || 0;
+      const sex = sexEl.value;
+      const weight = Number(weightEl.value) || 0;
+      const height = Number(heightEl.value) || 0;
+      const activity = Number(activityEl.value) || 1.2;
+      const goalPct = Number(goalEl.value) || 0; // example -20 for -20%
+      const proteinMode = proteinModeEl.value;
+      const proteinInput = Number(proteinValueEl.value) || 0;
+
+      // محاسبه BMR (Mifflin-St Jeor)
+      // دقت: عملیات عددی به صورت استاندارد JS انجام می‌شود
+      let bmr;
+      if(sex === 'male'){
+        bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+      } else {
+        bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+      }
+      bmr = round2(bmr);
+      bmrEl.textContent = bmr + ' kcal';
+
+      // محاسبه TDEE
+      let tdee = round2(bmr * activity);
+      tdeeEl.textContent = tdee + ' kcal';
+
+      // کالری هدف با توجه به هدف کاربر
+      const targetCal = round2(tdee * (1 + goalPct/100));
+      targetCalEl.textContent = targetCal + ' kcal';
+
+      // درصد ماکرو از ورودی‌ها (اعتبارسنجی و نرمال کردن)
+      let protPct = Number(protPctEl.value) || 0;
+      let fatPct = Number(fatPctEl.value) || 0;
+      let carbPct = Number(carbPctEl.value) || 0;
+      // اگر کاربر پروتئین را با g/kg وارد کرده باشه، آن را تبدیل می‌کنیم به گرم سپس درصد
+      let proteinGramsFromSetting = null;
+      if(proteinMode === 'gperkg'){
+        // مقدار پروتئین هدف بر اساس g/kg
+        const gPerKg = proteinInput;
+        proteinGramsFromSetting = round2(gPerKg * weight);
+        // محاسبه کالریِ ناشی از پروتئین
+        const protCal = proteinGramsFromSetting * 4;
+        // درصد پروتئین = protCal / targetCal *100
+        protPct = round2((protCal / targetCal) * 100);
+        // سپس بقیه درصدها استفاده می‌شوند (نگهدار)
+        // اگر جمع درصدها بیشتر از 100 شد، نرمال می‌کنیم
+      } else {
+        // کاربر درصد داده؛ protPct همون است
+      }
+
+      // نرمال‌سازی درصدها در صورت لزوم
+      let sumPct = protPct + fatPct + carbPct;
+      if(sumPct === 0){
+        // قرار دادن پیش‌فرض متوازن
+        protPct = 20; fatPct = 30; carbPct = 50; sumPct = 100;
+      }
+      // اگر کاربر از g/kg استفاده کرده و درصد پروتئین به دست آمده است، به‌روزرسانی carb/fat بر اساس نسبت قبلی
+      if(proteinMode === 'gperkg' && proteinGramsFromSetting !== null){
+        // حالت ساده: ثابت نگه داشتن نسبت چربی/کربوهیدرات براساس ورودی فعلی
+        let remainingPct = 100 - protPct;
+        // اگر کل درصد ورودی fat+carb =0، default به 30/ (70)
+        let fatInput = Number(fatPctEl.value) || 30;
+        let carbInput = Number(carbPctEl.value) || 50;
+        const fcSum = fatInput + carbInput;
+        if(fcSum === 0){
+          fatPct = Math.round(remainingPct * 0.3);
+          carbPct = remainingPct - fatPct;
+        } else {
+          fatPct = Math.round(remainingPct * (fatInput / fcSum));
+          carbPct = remainingPct - fatPct;
+        }
+        sumPct = protPct + fatPct + carbPct;
+      }
+
+      // اگر جمع درصدها برابر 100 نباشه، نرمال‌سازی
+      if(sumPct !== 100){
+        protPct = round2((protPct / sumPct) * 100);
+        fatPct = round2((fatPct / sumPct) * 100);
+        carbPct = round2((carbPct / sumPct) * 100);
+        sumPct = protPct + fatPct + carbPct;
+        // تنظیم نهایی برای اطمینان از جمع 100
+        const diff = round2(100 - (protPct + fatPct + carbPct));
+        if(Math.abs(diff) >= 0.1){
+          // اعمال اختلاف به کربوهیدرات
+          carbPct = round2(carbPct + diff);
+        }
+      }
+
+      // حالا محاسبهٔ گرم‌ها
+      // کالری های هر ماکرو
+      const kcalProtein = (protPct/100) * targetCal;
+      const kcalFat = (fatPct/100) * targetCal;
+      const kcalCarb = (carbPct/100) * targetCal;
+
+      const gramsProtein = round2(kcalProtein / 4);
+      const gramsFat = round2(kcalFat / 9);
+      const gramsCarb = round2(kcalCarb / 4);
+
+      // نمایش کارت‌ها
+      macroList.innerHTML = '';
+      const macros = [
+        {name:'پروتئین', pct:protPct, kcal:round2(kcalProtein), grams:gramsProtein, note: proteinMode==='gperkg' && proteinGramsFromSetting ? ('هدف g/kg → '+proteinGramsFromSetting+' g') : ''},
+        {name:'چربی', pct:fatPct, kcal:round2(kcalFat), grams:gramsFat, note:''},
+        {name:'کربوهیدرات', pct:carbPct, kcal:round2(kcalCarb), grams:gramsCarb, note:''}
+      ];
+      macros.forEach(m=>{
+        const div = document.createElement('div');
+        div.className = 'macro';
+        div.innerHTML = `<div style="font-weight:700">${m.name}</div>
+                         <div class="meta">${m.pct}% — ${m.kcal} kcal</div>
+                         <div style="font-size:16px;margin-top:6px">${m.grams} g</div>
+                         <div class="small-muted" style="margin-top:6px">${m.note}</div>`;
+        macroList.appendChild(div);
+      });
+
+      // اختیاری: بررسی تناسب پروتئین بر اساس وزن
+      const protPerKg = round2(gramsProtein / (weight || 1));
+      const warnNode = document.createElement('div');
+      warnNode.className = 'small-muted';
+      warnNode.style.marginTop = '8px';
+      warnNode.textContent = `پروتئین ≈ ${protPerKg} g/kg وزن بدن.`;
+      macroList.appendChild(warnNode);
+
+    });
+  </script>
+</body>
+</html>
